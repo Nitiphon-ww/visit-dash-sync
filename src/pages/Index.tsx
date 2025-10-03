@@ -12,13 +12,13 @@ const Index = () => {
       const { supabase } = await import('@/integrations/supabase/client');
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        const { data: profile } = await supabase
-          .from('profiles')
+        const { data: userRole } = await supabase
+          .from('user_roles')
           .select('role')
-          .eq('id', session.user.id)
+          .eq('user_id', session.user.id)
           .single();
         
-        if (profile?.role === 'doctor') {
+        if (userRole?.role === 'doctor') {
           navigate('/doctor-dashboard');
         } else {
           navigate('/patient-dashboard');

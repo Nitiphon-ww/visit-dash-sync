@@ -20,13 +20,13 @@ const Auth = () => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        const { data: profile } = await supabase
-          .from('profiles')
+        const { data: userRole } = await supabase
+          .from('user_roles')
           .select('role')
-          .eq('id', session.user.id)
+          .eq('user_id', session.user.id)
           .single();
         
-        if (profile?.role === 'doctor') {
+        if (userRole?.role === 'doctor') {
           navigate('/doctor-dashboard');
         } else {
           navigate('/patient-dashboard');
@@ -51,15 +51,15 @@ const Auth = () => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         
-        const { data: profile } = await supabase
-          .from('profiles')
+        const { data: userRole } = await supabase
+          .from('user_roles')
           .select('role')
-          .eq('id', (await supabase.auth.getUser()).data.user?.id)
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
           .single();
 
         toast({ title: 'Welcome back!', description: 'Login successful' });
         
-        if (profile?.role === 'doctor') {
+        if (userRole?.role === 'doctor') {
           navigate('/doctor-dashboard');
         } else {
           navigate('/patient-dashboard');
