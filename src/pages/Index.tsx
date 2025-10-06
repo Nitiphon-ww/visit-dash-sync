@@ -7,17 +7,21 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is already logged in
+    let redirected = false;
+    
     const checkAuth = async () => {
+      if (redirected) return;
+      
       const { supabase } = await import('@/integrations/supabase/client');
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      if (session && !redirected) {
         const { data: userRole } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', session.user.id)
           .single();
         
+        redirected = true;
         if (userRole?.role === 'doctor') {
           navigate('/doctor-dashboard');
         } else {
@@ -26,7 +30,7 @@ const Index = () => {
       }
     };
     checkAuth();
-  }, [navigate]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10">

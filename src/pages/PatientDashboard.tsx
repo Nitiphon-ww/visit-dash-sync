@@ -40,12 +40,17 @@ const PatientDashboard = () => {
   const [userId, setUserId] = useState<string>('');
 
   useEffect(() => {
+    let redirected = false;
+    
     const initDashboard = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!user && !redirected) {
+        redirected = true;
         navigate('/auth');
         return;
       }
+      if (!user) return;
+      
       setUserId(user.id);
       await fetchDoctors();
       await fetchMyQueue(user.id);
@@ -73,7 +78,7 @@ const PatientDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [navigate]);
+  }, []);
 
   const fetchDoctors = async () => {
     const { data, error } = await supabase

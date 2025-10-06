@@ -17,15 +17,20 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
 
   useEffect(() => {
+    let redirected = false;
+    
     const checkUser = async () => {
+      if (redirected) return;
+      
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      if (session && !redirected) {
         const { data: userRole } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', session.user.id)
           .single();
         
+        redirected = true;
         if (userRole?.role === 'doctor') {
           navigate('/doctor-dashboard');
         } else {
@@ -34,7 +39,7 @@ const Auth = () => {
       }
     };
     checkUser();
-  }, [navigate]);
+  }, []);
 
   const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

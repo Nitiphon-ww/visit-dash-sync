@@ -29,12 +29,16 @@ const DoctorDashboard = () => {
   const [doctorId, setDoctorId] = useState<string>('');
 
   useEffect(() => {
+    let redirected = false;
+    
     const initDashboard = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      if (!user && !redirected) {
+        redirected = true;
         navigate('/auth');
         return;
       }
+      if (!user) return;
 
       const { data: doctor } = await supabase
         .from('doctors')
@@ -42,20 +46,23 @@ const DoctorDashboard = () => {
         .eq('profile_id', user.id)
         .single();
 
-      if (!doctor) {
+      if (!doctor && !redirected) {
         toast({
           title: 'Error',
           description: 'Doctor profile not found',
           variant: 'destructive'
         });
+        redirected = true;
         navigate('/auth');
         return;
       }
 
-      setDoctorId(doctor.id);
-      setConsultationTime(doctor.average_consultation_minutes);
-      await fetchQueue(doctor.id);
-      setLoading(false);
+      if (doctor) {
+        setDoctorId(doctor.id);
+        setConsultationTime(doctor.average_consultation_minutes);
+        await fetchQueue(doctor.id);
+        setLoading(false);
+      }
     };
 
     initDashboard();
@@ -79,7 +86,7 @@ const DoctorDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [navigate, doctorId, toast]);
+  }, [doctorId]);
 
   const fetchQueue = async (drId: string) => {
     const { data, error } = await supabase
