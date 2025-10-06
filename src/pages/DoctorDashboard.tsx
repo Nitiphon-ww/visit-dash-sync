@@ -277,7 +277,7 @@ const DoctorDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold">Queue #{currentPatient.queue_number}</p>
-                  <p className="text-lg">{currentPatient.profiles.full_name}</p>
+                  <p className="text-lg">{currentPatient.profiles?.full_name || 'Patient'}</p>
                   <p className="text-sm text-muted-foreground">Called at {new Date(currentPatient.called_at || '').toLocaleTimeString()}</p>
                 </div>
                 <Button onClick={() => completePatient(currentPatient.id)} size="lg" variant="default">
@@ -312,7 +312,7 @@ const DoctorDashboard = () => {
                         <span className="text-lg font-bold text-primary">{patient.queue_number}</span>
                       </div>
                       <div>
-                        <p className="font-medium">{patient.profiles.full_name}</p>
+                        <p className="font-medium">{patient.profiles?.full_name || 'Patient'}</p>
                         <p className="text-sm text-muted-foreground">
                           Booked at {new Date(patient.booked_at).toLocaleTimeString()}
                         </p>
