@@ -52,6 +52,50 @@ export type Database = {
           },
         ]
       }
+      medical_records: {
+        Row: {
+          booking_id: string
+          created_at: string
+          diagnosis: string | null
+          doctor_id: string
+          id: string
+          notes: string | null
+          patient_id: string
+          prescription: string | null
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          diagnosis?: string | null
+          doctor_id: string
+          id?: string
+          notes?: string | null
+          patient_id: string
+          prescription?: string | null
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          diagnosis?: string | null
+          doctor_id?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          prescription?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_records_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "queue_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
