@@ -203,7 +203,7 @@ const PatientDashboard = () => {
               </div>
               <div className="flex items-center justify-between pt-4 border-t">
                 <div>
-                  <p className="font-medium">{myQueue.doctors.profiles.full_name}</p>
+                  <p className="font-medium">{myQueue.doctors.profiles?.full_name || 'Doctor'}</p>
                   <p className="text-sm text-muted-foreground">{myQueue.doctors.specialization}</p>
                 </div>
                 <Badge variant={myQueue.status === 'called' ? 'default' : 'secondary'} className="animate-pulse">
@@ -225,7 +225,7 @@ const PatientDashboard = () => {
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="font-semibold text-lg">{doctor.profiles.full_name}</h3>
+                      <h3 className="font-semibold text-lg">{doctor.profiles?.full_name || 'Doctor'}</h3>
                       <p className="text-sm text-muted-foreground">{doctor.specialization}</p>
                     </div>
                     <Stethoscope className="w-8 h-8 text-primary" />
