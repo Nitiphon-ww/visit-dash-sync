@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Stethoscope, Clock, Users, LogOut, Activity } from 'lucide-react';
+import { Stethoscope, Clock, Users, LogOut, Activity, FileText, History } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Doctor {
   id: string;
@@ -21,11 +22,33 @@ interface QueueBooking {
   queue_number: number;
   status: string;
   doctor_id: string;
+  booked_at: string;
+  called_at: string | null;
+  completed_at: string | null;
   doctors: {
     specialization: string;
     average_consultation_minutes: number;
     profiles: {
       full_name: string;
+    };
+  };
+}
+
+interface MedicalRecord {
+  id: string;
+  diagnosis: string | null;
+  prescription: string | null;
+  notes: string | null;
+  created_at: string;
+  booking_id: string;
+  queue_bookings: {
+    queue_number: number;
+    booked_at: string;
+    doctors: {
+      profiles: {
+        full_name: string;
+      };
+      specialization: string;
     };
   };
 }
@@ -38,6 +61,8 @@ const PatientDashboard = () => {
   const [patientsAhead, setPatientsAhead] = useState(0);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string>('');
+  const [bookingHistory, setBookingHistory] = useState<QueueBooking[]>([]);
+  const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([]);
 
   useEffect(() => {
     let redirected = false;
@@ -54,6 +79,8 @@ const PatientDashboard = () => {
       setUserId(user.id);
       await fetchDoctors();
       await fetchMyQueue(user.id);
+      await fetchBookingHistory(user.id);
+      await fetchMedicalRecords(user.id);
       setLoading(false);
     };
     initDashboard();
@@ -114,6 +141,30 @@ const PatientDashboard = () => {
     } else {
       setMyQueue(null);
       setPatientsAhead(0);
+    }
+  };
+
+  const fetchBookingHistory = async (patientId: string) => {
+    const { data, error } = await supabase
+      .from('queue_bookings')
+      .select('*, doctors(specialization, average_consultation_minutes, profiles(full_name))')
+      .eq('patient_id', patientId)
+      .order('booked_at', { ascending: false });
+
+    if (!error && data) {
+      setBookingHistory(data);
+    }
+  };
+
+  const fetchMedicalRecords = async (patientId: string) => {
+    const { data, error } = await supabase
+      .from('medical_records')
+      .select('*, queue_bookings(queue_number, booked_at, doctors(profiles(full_name), specialization))')
+      .eq('patient_id', patientId)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setMedicalRecords(data);
     }
   };
 
@@ -178,74 +229,180 @@ const PatientDashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {myQueue && (
-          <Card className="mb-8 border-primary/20 shadow-[var(--shadow-medical)] animate-fade-in">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className={myQueue.status === 'called' ? 'animate-pulse text-accent' : 'text-primary'} />
-                Your Queue Status
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-primary/10 rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">Queue Number</p>
-                  <p className="text-3xl font-bold text-primary">{myQueue.queue_number}</p>
-                </div>
-                <div className="text-center p-4 bg-accent/10 rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">Patients Ahead</p>
-                  <p className="text-3xl font-bold text-accent">{patientsAhead}</p>
-                </div>
-                <div className="text-center p-4 bg-secondary/10 rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">Est. Wait Time</p>
-                  <p className="text-3xl font-bold text-secondary">{calculateWaitTime()} min</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div>
-                  <p className="font-medium">{myQueue.doctors.profiles?.full_name || 'Doctor'}</p>
-                  <p className="text-sm text-muted-foreground">{myQueue.doctors.specialization}</p>
-                </div>
-                <Badge variant={myQueue.status === 'called' ? 'default' : 'secondary'} className="animate-pulse">
-                  {myQueue.status === 'called' ? 'YOUR TURN!' : 'Waiting'}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <Tabs defaultValue="current" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="current">Current Queue</TabsTrigger>
+            <TabsTrigger value="history">Booking History</TabsTrigger>
+            <TabsTrigger value="records">Medical Records</TabsTrigger>
+          </TabsList>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Available Doctors</CardTitle>
-            <CardDescription>Choose a doctor to book your queue</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {doctors.map((doctor) => (
-              <Card key={doctor.id} className="hover:shadow-[var(--shadow-medical)] transition-all">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h3 className="font-semibold text-lg">{doctor.profiles?.full_name || 'Doctor'}</h3>
-                      <p className="text-sm text-muted-foreground">{doctor.specialization}</p>
+          <TabsContent value="current" className="space-y-6 mt-6">
+            {myQueue && (
+              <Card className="border-primary/20 shadow-[var(--shadow-medical)] animate-fade-in">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className={myQueue.status === 'called' ? 'animate-pulse text-accent' : 'text-primary'} />
+                    Your Queue Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-primary/10 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1">Queue Number</p>
+                      <p className="text-3xl font-bold text-primary">{myQueue.queue_number}</p>
                     </div>
-                    <Stethoscope className="w-8 h-8 text-primary" />
+                    <div className="text-center p-4 bg-accent/10 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1">Patients Ahead</p>
+                      <p className="text-3xl font-bold text-accent">{patientsAhead}</p>
+                    </div>
+                    <div className="text-center p-4 bg-secondary/10 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1">Est. Wait Time</p>
+                      <p className="text-3xl font-bold text-secondary">{calculateWaitTime()} min</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                    <Clock className="w-4 h-4" />
-                    <span>~{doctor.average_consultation_minutes} min per patient</span>
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <div>
+                      <p className="font-medium">{myQueue.doctors.profiles?.full_name || 'Doctor'}</p>
+                      <p className="text-sm text-muted-foreground">{myQueue.doctors.specialization}</p>
+                    </div>
+                    <Badge variant={myQueue.status === 'called' ? 'default' : 'secondary'} className="animate-pulse">
+                      {myQueue.status === 'called' ? 'YOUR TURN!' : 'Waiting'}
+                    </Badge>
                   </div>
-                  <Button
-                    onClick={() => bookQueue(doctor.id)}
-                    disabled={!!myQueue}
-                    className="w-full"
-                  >
-                    {myQueue ? 'Already in Queue' : 'Book Queue'}
-                  </Button>
                 </CardContent>
               </Card>
-            ))}
-          </CardContent>
-        </Card>
+            )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Available Doctors</CardTitle>
+                <CardDescription>Choose a doctor to book your queue</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {doctors.map((doctor) => (
+                  <Card key={doctor.id} className="hover:shadow-[var(--shadow-medical)] transition-all">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="font-semibold text-lg">{doctor.profiles?.full_name || 'Doctor'}</h3>
+                          <p className="text-sm text-muted-foreground">{doctor.specialization}</p>
+                        </div>
+                        <Stethoscope className="w-8 h-8 text-primary" />
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                        <Clock className="w-4 h-4" />
+                        <span>~{doctor.average_consultation_minutes} min per patient</span>
+                      </div>
+                      <Button
+                        onClick={() => bookQueue(doctor.id)}
+                        disabled={!!myQueue}
+                        className="w-full"
+                      >
+                        {myQueue ? 'Already in Queue' : 'Book Queue'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="w-5 h-5" />
+                  Booking History
+                </CardTitle>
+                <CardDescription>Your past and current appointments</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {bookingHistory.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">No booking history</p>
+                ) : (
+                  bookingHistory.map((booking) => (
+                    <div key={booking.id} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Queue #{booking.queue_number}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {booking.doctors.profiles?.full_name || 'Doctor'} - {booking.doctors.specialization}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(booking.booked_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <Badge variant={
+                          booking.status === 'completed' ? 'default' : 
+                          booking.status === 'called' ? 'secondary' : 
+                          'outline'
+                        }>
+                          {booking.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="records" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Medical Records
+                </CardTitle>
+                <CardDescription>Your medical history and prescriptions</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {medicalRecords.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">No medical records yet</p>
+                ) : (
+                  medicalRecords.map((record) => (
+                    <Card key={record.id} className="border-primary/20">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="font-medium">
+                              {record.queue_bookings.doctors.profiles?.full_name || 'Doctor'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {record.queue_bookings.doctors.specialization}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(record.created_at).toLocaleString()}
+                            </p>
+                          </div>
+                          <Badge>Queue #{record.queue_bookings.queue_number}</Badge>
+                        </div>
+                        {record.diagnosis && (
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Diagnosis:</p>
+                            <p className="text-sm">{record.diagnosis}</p>
+                          </div>
+                        )}
+                        {record.prescription && (
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Prescription:</p>
+                            <p className="text-sm">{record.prescription}</p>
+                          </div>
+                        )}
+                        {record.notes && (
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Notes:</p>
+                            <p className="text-sm">{record.notes}</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
