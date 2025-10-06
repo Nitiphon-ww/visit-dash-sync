@@ -40,20 +40,47 @@ const DoctorDashboard = () => {
       }
       if (!user) return;
 
-      const { data: doctor } = await supabase
+      const { data: doctor, error: doctorError } = await supabase
         .from('doctors')
         .select('id, average_consultation_minutes')
         .eq('profile_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!doctor && !redirected) {
-        toast({
-          title: 'Error',
-          description: 'Doctor profile not found',
-          variant: 'destructive'
-        });
-        redirected = true;
-        navigate('/auth');
+        // Create doctor profile if it doesn't exist
+        const { data: newDoctor, error: createError } = await supabase
+          .from('doctors')
+          .insert({
+            profile_id: user.id,
+            specialization: 'General Practice',
+            average_consultation_minutes: 15,
+            is_available: true
+          })
+          .select('id, average_consultation_minutes')
+          .single();
+        
+        if (createError) {
+          toast({
+            title: 'Error',
+            description: 'Failed to create doctor profile',
+            variant: 'destructive'
+          });
+          redirected = true;
+          await supabase.auth.signOut();
+          navigate('/auth');
+          return;
+        }
+        
+        if (newDoctor) {
+          setDoctorId(newDoctor.id);
+          setConsultationTime(newDoctor.average_consultation_minutes);
+          await fetchQueue(newDoctor.id);
+          setLoading(false);
+          toast({
+            title: 'Welcome!',
+            description: 'Your doctor profile has been created'
+          });
+        }
         return;
       }
 
