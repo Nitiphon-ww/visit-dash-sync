@@ -203,6 +203,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      count_patients_ahead: {
+        Args: { _doctor_id: string; _patient_id: string; _queue_number: number }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]

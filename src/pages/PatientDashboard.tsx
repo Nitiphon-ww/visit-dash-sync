@@ -124,14 +124,19 @@ const PatientDashboard = () => {
 
     if (!error && data) {
       setMyQueue(data);
-      // Calculate patients ahead
-      const { count } = await supabase
-        .from('queue_bookings')
-        .select('*', { count: 'exact', head: true })
-        .eq('doctor_id', data.doctor_id)
-        .eq('status', 'waiting')
-        .lt('queue_number', data.queue_number);
-      setPatientsAhead(count || 0);
+      // Use secure function to count patients ahead without exposing patient information
+      const { data: count, error: countError } = await supabase
+        .rpc('count_patients_ahead', {
+          _doctor_id: data.doctor_id,
+          _queue_number: data.queue_number,
+          _patient_id: patientId
+        });
+      
+      if (!countError) {
+        setPatientsAhead(count || 0);
+      } else {
+        setPatientsAhead(0);
+      }
     } else {
       setMyQueue(null);
       setPatientsAhead(0);
