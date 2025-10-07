@@ -28,9 +28,7 @@ interface QueuePatient {
   called_at: string | null;
   completed_at: string | null;
   patient_id: string;
-  profiles: {
-    full_name: string;
-  };
+  patient_name: string;
 }
 
 interface MedicalRecord {
@@ -43,9 +41,7 @@ interface MedicalRecord {
   queue_bookings: {
     queue_number: number;
     booked_at: string;
-    profiles: {
-      full_name: string;
-    };
+    patient_name: string;
   };
 }
 
@@ -158,7 +154,7 @@ const DoctorDashboard = () => {
   const fetchQueue = async (drId: string) => {
     const { data, error } = await supabase
       .from('queue_bookings')
-      .select('*, profiles(full_name)')
+      .select('*')
       .eq('doctor_id', drId)
       .in('status', ['waiting', 'called'])
       .order('queue_number', { ascending: true });
@@ -171,7 +167,7 @@ const DoctorDashboard = () => {
   const fetchMedicalRecords = async (drId: string) => {
     const { data, error } = await supabase
       .from('medical_records')
-      .select('*, queue_bookings(queue_number, booked_at, profiles(full_name))')
+      .select('*, queue_bookings(queue_number, booked_at, patient_name)')
       .eq('doctor_id', drId)
       .order('created_at', { ascending: false });
 
@@ -183,7 +179,7 @@ const DoctorDashboard = () => {
   const fetchCompletedBookings = async (drId: string) => {
     const { data, error } = await supabase
       .from('queue_bookings')
-      .select('*, profiles(full_name)')
+      .select('*')
       .eq('doctor_id', drId)
       .eq('status', 'completed')
       .order('completed_at', { ascending: false });
@@ -221,7 +217,7 @@ const DoctorDashboard = () => {
     } else {
       toast({
         title: 'Patient called',
-        description: `Queue #${nextPatient.queue_number} - ${nextPatient.profiles.full_name}`
+        description: `Queue #${nextPatient.queue_number} - ${nextPatient.patient_name}`
       });
     }
   };
@@ -290,7 +286,7 @@ const DoctorDashboard = () => {
 MEDICAL REPORT
 =============
 
-Patient: ${record.queue_bookings.profiles?.full_name || 'Patient'}
+Patient: ${record.queue_bookings.patient_name || 'Patient'}
 Queue Number: ${record.queue_bookings.queue_number}
 Date: ${new Date(record.created_at).toLocaleString()}
 
@@ -326,7 +322,7 @@ ${record.notes || 'N/A'}
 
     medicalRecords.forEach((record, index) => {
       content += `REPORT ${index + 1}\n`;
-      content += `Patient: ${record.queue_bookings.profiles?.full_name || 'Patient'}\n`;
+      content += `Patient: ${record.queue_bookings.patient_name || 'Patient'}\n`;
       content += `Queue Number: ${record.queue_bookings.queue_number}\n`;
       content += `Date: ${new Date(record.created_at).toLocaleString()}\n\n`;
       content += `DIAGNOSIS:\n${record.diagnosis || 'N/A'}\n\n`;
@@ -452,7 +448,7 @@ ${record.notes || 'N/A'}
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-2xl font-bold">Queue #{currentPatient.queue_number}</p>
-                      <p className="text-lg">{currentPatient.profiles?.full_name || 'Patient'}</p>
+                      <p className="text-lg">{currentPatient.patient_name || 'Patient'}</p>
                       <p className="text-sm text-muted-foreground">Called at {new Date(currentPatient.called_at || '').toLocaleTimeString()}</p>
                     </div>
                     <Button onClick={() => completePatient(currentPatient.id, currentPatient)} size="lg" variant="default">
@@ -487,7 +483,7 @@ ${record.notes || 'N/A'}
                             <span className="text-lg font-bold text-primary">{patient.queue_number}</span>
                           </div>
                           <div>
-                            <p className="font-medium">{patient.profiles?.full_name || 'Patient'}</p>
+                            <p className="font-medium">{patient.patient_name || 'Patient'}</p>
                             <p className="text-sm text-muted-foreground">
                               Booked at {new Date(patient.booked_at).toLocaleTimeString()}
                             </p>
@@ -571,7 +567,7 @@ ${record.notes || 'N/A'}
                       {completedBookings.map((booking) => (
                         <TableRow key={booking.id}>
                           <TableCell className="font-medium">{booking.queue_number}</TableCell>
-                          <TableCell>{booking.profiles?.full_name || 'Patient'}</TableCell>
+                          <TableCell>{booking.patient_name || 'Patient'}</TableCell>
                           <TableCell>{new Date(booking.booked_at).toLocaleString()}</TableCell>
                           <TableCell>{booking.completed_at ? new Date(booking.completed_at).toLocaleString() : '-'}</TableCell>
                         </TableRow>
@@ -618,7 +614,7 @@ ${record.notes || 'N/A'}
                       {medicalRecords.map((record) => (
                         <TableRow key={record.id}>
                           <TableCell className="font-medium">{record.queue_bookings.queue_number}</TableCell>
-                          <TableCell>{record.queue_bookings.profiles?.full_name || 'Patient'}</TableCell>
+                          <TableCell>{record.queue_bookings.patient_name || 'Patient'}</TableCell>
                           <TableCell>{new Date(record.created_at).toLocaleString()}</TableCell>
                           <TableCell>{record.diagnosis || 'N/A'}</TableCell>
                           <TableCell>

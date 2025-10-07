@@ -132,6 +132,7 @@ export type Database = {
           doctor_id: string
           id: string
           patient_id: string
+          patient_name: string
           queue_number: number
           status: Database["public"]["Enums"]["queue_status"]
         }
@@ -143,6 +144,7 @@ export type Database = {
           doctor_id: string
           id?: string
           patient_id: string
+          patient_name?: string
           queue_number: number
           status?: Database["public"]["Enums"]["queue_status"]
         }
@@ -154,6 +156,7 @@ export type Database = {
           doctor_id?: string
           id?: string
           patient_id?: string
+          patient_name?: string
           queue_number?: number
           status?: Database["public"]["Enums"]["queue_status"]
         }
