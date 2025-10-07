@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           average_consultation_minutes: number
           created_at: string | null
+          full_name: string
           id: string
           is_available: boolean
           profile_id: string
@@ -27,6 +28,7 @@ export type Database = {
         Insert: {
           average_consultation_minutes?: number
           created_at?: string | null
+          full_name?: string
           id?: string
           is_available?: boolean
           profile_id: string
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           average_consultation_minutes?: number
           created_at?: string | null
+          full_name?: string
           id?: string
           is_available?: boolean
           profile_id?: string

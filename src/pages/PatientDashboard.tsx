@@ -12,9 +12,7 @@ interface Doctor {
   id: string;
   specialization: string;
   average_consultation_minutes: number;
-  profiles: {
-    full_name: string;
-  };
+  full_name: string;
 }
 
 interface QueueBooking {
@@ -28,9 +26,7 @@ interface QueueBooking {
   doctors: {
     specialization: string;
     average_consultation_minutes: number;
-    profiles: {
-      full_name: string;
-    };
+    full_name: string;
   };
 }
 
@@ -45,9 +41,7 @@ interface MedicalRecord {
     queue_number: number;
     booked_at: string;
     doctors: {
-      profiles: {
-        full_name: string;
-      };
+      full_name: string;
       specialization: string;
     };
   };
@@ -110,7 +104,7 @@ const PatientDashboard = () => {
   const fetchDoctors = async () => {
     const { data, error } = await supabase
       .from('doctors')
-      .select('*, profiles(full_name)')
+      .select('*')
       .eq('is_available', true);
 
     if (!error && data) {
@@ -121,7 +115,7 @@ const PatientDashboard = () => {
   const fetchMyQueue = async (patientId: string) => {
     const { data, error } = await supabase
       .from('queue_bookings')
-      .select('*, doctors(specialization, average_consultation_minutes, profiles(full_name))')
+      .select('*, doctors(specialization, average_consultation_minutes, full_name)')
       .eq('patient_id', patientId)
       .in('status', ['waiting', 'called'])
       .order('created_at', { ascending: false })
@@ -147,7 +141,7 @@ const PatientDashboard = () => {
   const fetchBookingHistory = async (patientId: string) => {
     const { data, error } = await supabase
       .from('queue_bookings')
-      .select('*, doctors(specialization, average_consultation_minutes, profiles(full_name))')
+      .select('*, doctors(specialization, average_consultation_minutes, full_name)')
       .eq('patient_id', patientId)
       .order('booked_at', { ascending: false });
 
@@ -159,7 +153,7 @@ const PatientDashboard = () => {
   const fetchMedicalRecords = async (patientId: string) => {
     const { data, error } = await supabase
       .from('medical_records')
-      .select('*, queue_bookings(queue_number, booked_at, doctors(profiles(full_name), specialization))')
+      .select('*, queue_bookings(queue_number, booked_at, doctors(full_name, specialization))')
       .eq('patient_id', patientId)
       .order('created_at', { ascending: false });
 
@@ -262,7 +256,7 @@ const PatientDashboard = () => {
                   </div>
                   <div className="flex items-center justify-between pt-4 border-t">
                     <div>
-                      <p className="font-medium">{myQueue.doctors.profiles?.full_name || 'Doctor'}</p>
+                      <p className="font-medium">{myQueue.doctors.full_name || 'Doctor'}</p>
                       <p className="text-sm text-muted-foreground">{myQueue.doctors.specialization}</p>
                     </div>
                     <Badge variant={myQueue.status === 'called' ? 'default' : 'secondary'} className="animate-pulse">
@@ -284,7 +278,7 @@ const PatientDashboard = () => {
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div>
-                          <h3 className="font-semibold text-lg">{doctor.profiles?.full_name || 'Doctor'}</h3>
+                          <h3 className="font-semibold text-lg">{doctor.full_name || 'Doctor'}</h3>
                           <p className="text-sm text-muted-foreground">{doctor.specialization}</p>
                         </div>
                         <Stethoscope className="w-8 h-8 text-primary" />
@@ -326,7 +320,7 @@ const PatientDashboard = () => {
                         <div>
                           <p className="font-medium">Queue #{booking.queue_number}</p>
                           <p className="text-sm text-muted-foreground">
-                            {booking.doctors.profiles?.full_name || 'Doctor'} - {booking.doctors.specialization}
+                            {booking.doctors.full_name || 'Doctor'} - {booking.doctors.specialization}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {new Date(booking.booked_at).toLocaleString()}
@@ -366,7 +360,7 @@ const PatientDashboard = () => {
                         <div className="flex items-start justify-between">
                           <div>
                             <p className="font-medium">
-                              {record.queue_bookings.doctors.profiles?.full_name || 'Doctor'}
+                              {record.queue_bookings.doctors.full_name || 'Doctor'}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {record.queue_bookings.doctors.specialization}

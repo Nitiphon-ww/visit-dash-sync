@@ -87,7 +87,8 @@ const Auth = () => {
             const specialization = formData.get('specialization') as string;
             await supabase.from('doctors').insert({
               profile_id: user.id,
-              specialization: specialization || 'General Practice'
+              specialization: specialization || 'General Practice',
+              full_name: fullName || 'Doctor'
             });
           }
         }
